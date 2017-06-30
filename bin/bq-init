@@ -1,0 +1,139 @@
+#!/usr/bin/env node
+
+const program = require('commander')
+const chalk = require('chalk')
+const path = require('path')
+const home = require('user-home')
+const tildify = require('tildify')
+const exists = require('fs').existsSync
+const inquirer = require('inquirer')
+const ora = require('ora')
+const download = require('download-git-repo')
+const rm = require('rimraf').sync
+const generate = require('../lib/generate')
+const checkVersion = require('../lib/check-version')
+const localPath = require('../lib/local-path')
+const logger = require('../lib/logger')
+
+var isLocalPath = localPath.isLocalPath
+var getTemplatePath = localPath.getTemplatePath
+
+program
+  .usage('<模板> [项目名称]')
+  .option('-c, --clone', '使用自己的git 模板')
+  .option('-f, --offline', '使用本地缓存')
+
+/**
+ * Help.
+ */
+program.on('--help', function () {
+  console.log('  举个🌰:')
+  console.log()
+  console.log(chalk.gray('    # 创建一个vue的项目模板 可以使用bq list 查看支持的项目'))
+  console.log('    $ bq init vue my-project')
+  console.log()
+  console.log(chalk.gray('    # 从你的仓库拉取一个模板'))
+  console.log('    $ bq init username/repo my-project')
+  console.log()
+})
+
+/**
+ * Help.
+ */
+function help () {
+  program.parse(process.argv)
+  if (program.args.length < 1) return program.help()
+}
+help()
+
+// 配置读取
+var template = program.args[0]
+var hasSlash = template.indexOf('/') > -1
+var rawName = program.args[1]
+var inPlace = !rawName || rawName === '.'
+var name = inPlace ? path.relative('../', process.cwd()) : rawName
+var to = path.resolve(rawName || '.')
+// 是否使用自己仓库的
+var clone = program.clone || true
+var tmp = path.join(home, '.bq-templates', template.replace(/\//g, '-'))
+if (program.offline) {
+  console.log(`> 使用的本地缓存 ${chalk.yellow(tildify(tmp))}`)
+  template = tmp
+}
+
+/**
+ * Padding.
+ */
+console.log()
+process.on('exit', function () {
+  console.log()
+})
+
+if (exists(to)) {
+  inquirer.prompt([{
+    type: 'confirm',
+    message: inPlace
+      ? '在当前的目录中生成项目?'
+      : '目录已经存在，是否继续?',
+    name: 'ok'
+  }], function (answers) {
+    if (answers.ok) {
+      run()
+    }
+  })
+} else {
+  run()
+}
+
+function run () {
+  // check if template is local
+  if (isLocalPath(template)) {
+    var templatePath = getTemplatePath(template)
+    if (exists(templatePath)) {
+      generate(name, templatePath, to, function (err) {
+        if (err) logger.fatal(err)
+        console.log()
+        logger.success('Generated "%s".', name)
+      })
+    } else {
+      logger.fatal('Local template "%s" not found.', template)
+    }
+  } else {
+    checkVersion(function () {
+      if (!hasSlash) {
+         downloadAndGenerate(getBqTemplate(template))
+      } else {
+        downloadAndGenerate(template)
+      }
+    })
+  }
+}
+
+/**
+ * Download a generate from a template repo.
+ *
+ * @param {String} template
+ */
+
+function downloadAndGenerate (template) {
+  var spinner = ora('下载模板.....')
+  spinner.start()
+  // Remove if local template exists
+  if (exists(tmp)) rm(tmp)
+  console.log(template, clone)
+  // 下载模板库
+  download(template, tmp, { clone: clone }, function (err) {
+    spinner.stop()
+    if (err) logger.fatal('下载模板 失败 ' + template + ': ' + err.message.trim())
+    generate(name, tmp, to, function (err) {
+      if (err) logger.fatal(err)
+      console.log()
+      logger.success('Generated "%s".', name)
+    })
+  })
+}
+
+function getBqTemplate() {
+  return 'gitlab:git.beiquan.org:bq-fe/' + template + '-template'
+}
+
