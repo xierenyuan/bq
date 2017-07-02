@@ -76,7 +76,7 @@ if (exists(to)) {
       ? '在当前的目录中生成项目?'
       : '目录已经存在，是否继续?',
     name: 'ok'
-  }], function (answers) {
+  }]).then(function (answers) {
     if (answers.ok) {
       run()
     }

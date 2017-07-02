@@ -6,4 +6,5 @@ program
   .usage('<command> [options]')
   .command('init', 'create template')
   .command('list', 'show list')
+  .command('login', '设置用户信息')
   .parse(process.argv)

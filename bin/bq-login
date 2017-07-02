@@ -1,0 +1,51 @@
+#!/usr/bin/env node
+
+const logger = require('../lib/logger')
+const chalk = require('chalk')
+const inquirer = require('inquirer')
+const path = require('path')
+const fs = require('fs')
+const exists = fs.existsSync
+
+
+/**
+ * Padding.
+ */
+console.log()
+process.on('exit', function () {
+  console.log()
+})
+
+let file = path.resolve(__dirname, '../.bqrc.json')
+if (exists(file)) {
+  inquirer.prompt([{
+    type: 'confirm',
+    message: '已经设置过用户信息，是否继续？',
+    name: 'ok'
+  }]).then(function (answers) {
+    if (answers.ok) {
+      run()
+    }
+  })
+} else {
+  run()
+}
+
+/**
+ * 生成
+ */
+function run() {
+  console.log('233')
+  inquirer.prompt([{type: 'input', name: 'key', message: '请输入你的gitlab 私有key'}]).then(function(answers){
+    if (answers.key) {
+      fs.writeFile(file, JSON.stringify(answers, null, 2 ), 'utf8', function(err) {
+        if(err) logger.fatal(err)
+        console.log(chalk.blue('登录配置成功!'))
+      })
+    }
+  })
+}
+
+
+
+

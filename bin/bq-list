@@ -1,6 +1,47 @@
 #!/usr/bin/env node
 
-if (true) {
-  let info = 'list';
-  console.log(info)
+const logger = require('../lib/logger')
+const request = require('request')
+const chalk = require('chalk')
+
+/**
+ * Padding.
+ */
+console.log()
+process.on('exit', function () {
+  console.log()
+})
+
+try {
+  var config = require('../.bqrc.json')
+  run(config.key)
+} catch(e) {
+  console.log('  还没有private_token /(ㄒoㄒ)/~~:')
+  console.log()
+  console.log(chalk.gray('    你可以执行bq login 写入key '))
 }
+
+function run(key) {
+  /**
+   * List repos.
+   */
+  request.get('http://git.beiquan.org/api/v3/groups/bq-fe?private_token=' + key, function (err, res, body) {
+    if (err) logger.fatal(err)
+    var requestBody = JSON.parse(body)
+    let projects = requestBody.projects
+    if (Array.isArray(projects)) {
+      projects = projects.filter(item =>  item.name.indexOf('-template') != -1)
+      console.log('  下边是可以的使用的模板😎:')
+      console.log()
+      projects.forEach(function (repo) {
+        console.log(
+          '  ' + chalk.yellow('★') +
+          '  ' + chalk.blue(repo.name) +
+          ' - ' + repo.description)
+      })
+    } else {
+      console.error('获取不到项目, 请检测你的key 是否设置正确')
+    }
+  })
+}
+
