@@ -1,6 +1,6 @@
 {
   "name": "bq-cli",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "beiquan 脚手架 项目生成",
   "main": "index.js",
   "bin": {

@@ -1,0 +1,73 @@
+#!/usr/bin/env node
+
+const logger = require('../lib/logger')
+const chalk = require('chalk')
+const inquirer = require('inquirer')
+const path = require('path')
+const fs = require('fs')
+const exists = fs.existsSync
+
+/**
+ * Padding.
+ */
+console.log()
+process.on('exit', function () {
+  console.log()
+})
+
+inquirer.prompt([{
+  type: 'list',
+  name: 'template',
+  message: '请选择创建的模板文件',
+  choices: [{name: 'vue', checked: true}, {name: 'service'}]
+},{
+  type: 'input',
+  name: 'file',
+  message: '😆  请输入一个文件名称，不要后缀不要后缀'
+}]).then(function(answers) {
+    run(answers)
+})
+
+/**
+ * 生成
+ */
+function run(template) {
+  let tpl = getTemplate(template)
+  if (exists(tpl.file)) {
+    inquirer.prompt([{
+      type: 'confirm',
+      message: '这个文件以及存在是否 覆盖在继续？',
+      name: 'ok'
+    }]).then(function (answers) {
+      if (answers.ok) {
+        generate(tpl, template.file)
+      }
+    })
+  } else {
+    generate(tpl, template.file)
+  }
+}
+
+function generate(input, name) {
+  let content = fs.readFileSync(input.tpl)
+  fs.writeFile(input.file, content.toString(), function(err) {
+    if(err) logger.fatal(err)
+    console.log(chalk.blue(`${name} 创建成功!`))
+  })
+}
+
+function getTemplate(answers) {
+  try {
+    switch (true) {
+      case answers.template === 'vue':
+        return {tpl: path.resolve(__dirname, '../lib/.bq.vue'), file: path.resolve(process.cwd(), `${answers.file}.vue`)}
+      case answers.template === 'service':
+        return {tpl: path.resolve(__dirname, '../lib/.bq.service.js'), file: path.resolve(process.cwd(), `${answers.file}.js`)}
+      default:
+        return {};
+    }
+  } catch (error) {
+    console.error(error)
+  }
+
+}

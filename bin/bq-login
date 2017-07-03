@@ -35,7 +35,6 @@ if (exists(file)) {
  * 生成
  */
 function run() {
-  console.log('233')
   inquirer.prompt([{type: 'input', name: 'key', message: '请输入你的gitlab 私有key'}]).then(function(answers){
     if (answers.key) {
       fs.writeFile(file, JSON.stringify(answers, null, 2 ), 'utf8', function(err) {

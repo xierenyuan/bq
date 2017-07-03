@@ -7,4 +7,5 @@ program
   .command('init', 'create template')
   .command('list', 'show list')
   .command('login', '设置用户信息')
+  .command('create', '创建模板咯')
   .parse(process.argv)
